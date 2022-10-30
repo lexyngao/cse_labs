@@ -9,6 +9,7 @@
 
 class chfs_client {
   extent_client *ec;
+  extent_server *es;
  public:
 
   typedef unsigned long long inum;

@@ -20,6 +20,7 @@
 chfs_client::chfs_client()
 {
     ec = new extent_client();
+    es = ec->get_es();
 
 }
 
@@ -204,14 +205,27 @@ chfs_client::create(inum parent, const char *name, mode_t mode, inum &ino_out)
     if(existed)
         return EXIST;
 
+     //--------------------------- transaction start
+    //分配一个空inode
+    unsigned long long txid = ec->begin_tx();
+
     //choose a inum
     ec->create(extent_protocol::T_FILE, ino_out);
+
+    //log1
+    es->log_create(txid, extent_protocol::T_FILE);
 
     //modify parent
     std::string tmp_buf;
     ec->get(parent,tmp_buf);
     tmp_buf.append((std::string)name+":"+filename(ino_out)+"/");
     ec->put(parent,tmp_buf);
+
+    //log 2
+    es->log_put(txid,parent,tmp_buf);
+
+    ec->commit_tx(txid);
+      //--------------------------- transaction end
     return r;
 }
 
@@ -234,15 +248,27 @@ chfs_client::mkdir(inum parent, const char *name, mode_t mode, inum &ino_out)
     if(existed)
         return EXIST;
 
+    //--------------------------- transaction start
+    unsigned long long txid = ec->begin_tx();
+
     //choose a inum
     ec->create(extent_protocol::T_DIR, ino_out);
+
+    //log1
+    es->log_create(txid,extent_protocol::T_DIR);
 
     //modify parent
     std::string tmp_buf;
     ec->get(parent,tmp_buf);
     tmp_buf.append((std::string)name+":"+filename(ino_out)+"/");
+
+    //log 2
+    es->log_put(txid,parent,tmp_buf);
+
     ec->put(parent,tmp_buf);
 
+     ec->commit_tx(txid);
+    //--------------------------- transaction end
     return r;
 }
 
@@ -388,6 +414,8 @@ chfs_client::write(inum ino, size_t size, off_t off, const char *data,
         return r;
     }
 
+    //--------------------------- transaction start
+    unsigned long long txid = ec->begin_tx();
     
     if (off + size > buf.size()) //TODO：是否需要bytes_written变为off+size-buf.size()
         buf.resize(off + size,'\0'); /* 改变 buf 大小 */
@@ -396,10 +424,16 @@ chfs_client::write(inum ino, size_t size, off_t off, const char *data,
         buf[off+i] = data[i];
              
 	bytes_written = size;
-	if(ec->put(ino, buf)==extent_protocol::OK)
-		return r;
-    else
-        return IOERR;
+
+    //log-put
+    es->log_put(txid,ino,buf);
+
+	if(!ec->put(ino, buf)==extent_protocol::OK)
+		return IOERR;
+  
+    ec->commit_tx(txid);
+    return OK;
+    //--------------------------- transaction end
 
   
 }
@@ -422,6 +456,9 @@ int chfs_client::unlink(inum parent,const char *name)
     if(!existed)
         return NOENT;
 
+    //--------------------------- transaction start
+    unsigned long long txid = ec->begin_tx();
+
     //remove a inum
     if(ec->remove(tmp)!=extent_protocol::OK)
         return IOERR;
@@ -435,7 +472,12 @@ int chfs_client::unlink(inum parent,const char *name)
 	buf.erase(erase_start, erase_after - erase_start + 1);
 	if (ec->put(parent, buf) != extent_protocol::OK) 
        return IOERR;
-        
+
+    //log
+    es->log_remove(txid,tmp);   
+
+    ec->commit_tx(txid);
+    //--------------------------- transaction end
     return r;
 }
 
@@ -449,9 +491,18 @@ int chfs_client::symlink(inum parent, const char* name, const char* link, inum &
     if(existed)
         return EXIST;
 
+    //--------------------------- transaction start
+    unsigned long long txid = ec->begin_tx();
+
+    //log-create
+    es->log_create(txid,extent_protocol::T_SYMLINK);
+
     //choose a inum
     if(ec->create(extent_protocol::T_SYMLINK, ino_out)!=extent_protocol::OK)
         return IOERR;
+
+    //log-put1
+    es->log_put(txid,ino_out,(std::string)link);
     if(ec->put(ino_out,(std::string)link)!=extent_protocol::OK)
     {
         return IOERR;
@@ -462,7 +513,12 @@ int chfs_client::symlink(inum parent, const char* name, const char* link, inum &
     if(ec->get(parent,tmp_buf)!=extent_protocol::OK)
         return IOERR;
     tmp_buf.append((std::string)name+":"+filename(ino_out)+"/");
+    //log-put2
+    es->log_put(txid,parent,tmp_buf);
     if(ec->put(parent,tmp_buf)!=extent_protocol::OK)
         return IOERR;
+
+    ec->commit_tx(txid);
+    //--------------------------- transaction end
     return r;
 }

@@ -171,7 +171,7 @@ inode_manager::get_inode(uint32_t inum)
 
   if(!ino_tmp->type)
   {
-    printf("\twhen get_inode im: inode not exist\n");
+    // printf("\twhen get_inode im: inode not exist\n");
     return NULL;
   }
 
