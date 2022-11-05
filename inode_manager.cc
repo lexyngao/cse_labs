@@ -21,6 +21,42 @@ disk::write_block(blockid_t id, const char *buf)
   memcpy(blocks[id], buf, BLOCK_SIZE);
 }
 
+void
+disk::snapshot_blocks(char *buf)
+{
+  printf("进入disk层\n");
+  // for(int i = 0; i < BLOCK_NUM; i++)
+  // {
+  //   memcpy(buf,blocks[i],BLOCK_SIZE);
+  // }
+  // memcpy(buf,blocks,DISK_SIZE);
+   // 打开checkpoint文件
+    FILE * checkfile = fopen("log/checkpoint.bin", "wb");
+    char *test = (char *)blocks;
+    fwrite(blocks,1,DISK_SIZE,checkfile);
+    // fwrite(blocks,1,DISK_SIZE,checkfile);
+    // printf("写入的BLOCKS的内容:%S\n",blocks);
+    fclose(checkfile);
+  printf("disk层的copy完成\n");
+}
+
+bool
+disk::restore_blocks()
+{
+  FILE * checkfile = fopen("log/checkpoint.bin", "r");
+  if(!checkfile)
+  {
+    printf("之前没有触发checkpoint\n");
+    fclose(checkfile);
+    return false;
+  }
+  fread(blocks,1,DISK_SIZE,checkfile); 
+  fclose(checkfile);
+  printf("disk层的恢复完成\n");
+  return true;
+}
+
+
 // block layer -----------------------------------------
 
 // Allocate a free disk block.
@@ -76,6 +112,19 @@ void
 block_manager::write_block(uint32_t id, const char *buf)
 {
   d->write_block(id, buf);
+}
+
+void
+block_manager::snapshot_blocks(char *buf)
+{
+  d->snapshot_blocks(buf);
+  printf("bm层的copy完成\n");
+}
+
+bool
+block_manager::restore_blocks()
+{
+  return d->restore_blocks();
 }
 
 // inode layer -----------------------------------------
@@ -406,4 +455,97 @@ inode_manager::remove_file(uint32_t inum)
   free_inode(inum);
   free(ino);
   
+}
+
+void
+inode_manager::snapshot_blocks(char *buf)
+{
+  bm->snapshot_blocks(buf);
+  printf("im层的copy完成\n");
+}
+
+bool
+inode_manager::restore_blocks()
+{
+  return bm->restore_blocks();
+}
+
+bool 
+inode_manager::save_inodes()
+{
+  // 打开checkpoint文件
+  FILE * checkfile = fopen("log/checkpoint.bin", "wb");
+    
+  for(int i = 0; i < INODE_NUM; i++)
+  {
+    inode_t *ino = get_inode(i);
+    if(!ino)
+    continue;
+
+    char *cbuf = NULL;
+    int size = 0;
+    read_file(i, &cbuf, &size);
+    
+    fixed_struct set;
+    set.assign(i,ino->type,(unsigned long long)size);
+    fwrite(&set,sizeof(set),1,checkfile);
+    
+    fwrite(cbuf,1,size,checkfile);
+  }
+  fclose(checkfile);
+   printf("im copy完有内容的inode\n");
+}
+
+bool
+inode_manager::restore_inodes()
+{
+  // 打开checkpoint文件
+    FILE* checkfile = fopen("log/checkpoint.bin", "rb");
+    if(checkfile == NULL){
+        printf("checkpoint未被触发 \n");
+        return 0;
+    }
+    while(!feof(checkfile)){
+        std::string content = "xxx";
+        fixed_struct set;
+        fread(&set, sizeof(set), 1, checkfile);
+        std::string cbuf;
+        cbuf.resize(set.buf_size);
+        fread((char*)cbuf.c_str(), set.buf_size, 1, checkfile);
+        
+       //重新分配+put
+      //  这里为啥不用alloc:不一定会返回我想要的那个inum
+       int inum = set.inode;
+       inode_t *ino = get_inode(inum);
+          if(!ino){
+          ino = (inode_t *)malloc(sizeof(inode_t));
+          bzero(ino, sizeof(inode_t));
+          ino->type = set.type;
+          // to see if it need to be recorded
+          ino->atime = (unsigned int)time(NULL);
+          ino->mtime = (unsigned int)time(NULL);
+          ino->ctime = (unsigned int)time(NULL);
+          put_inode(inum, ino);
+          free(ino);
+          }
+          else{
+            printf("inode居然之前存在吗 不可思议\n");
+            bzero(ino, sizeof(inode_t));
+            ino->type = set.type;
+            // TODO: to see if it need to be recorded
+            ino->atime = (unsigned int)time(NULL);
+            ino->mtime = (unsigned int)time(NULL);
+            ino->ctime = (unsigned int)time(NULL);
+            put_inode(inum, ino);
+            free(ino);
+            // return 0;
+          }
+      //put inode? write file?
+      write_file(inum,cbuf.c_str(),set.buf_size);
+    
+    }
+    fclose(checkfile);
+    printf("我恢复完所有的之前写过的文件啦\n");
+    return true;
+
 }

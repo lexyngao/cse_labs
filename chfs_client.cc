@@ -177,12 +177,22 @@ chfs_client::setattr(inum ino, size_t size)
         return r;
     }
 
+    std::string origin_buf = buf;
+
     //直接resize
     buf.resize(size);
+    //--------------------------- transaction start
+    //分配一个空inode
+    unsigned long long txid = ec->begin_tx();
 
     if (ec->put(ino, buf) != extent_protocol::OK) {
         r = IOERR;
     }
+       //log 
+    es->log_put(txid,ino,buf,origin_buf);
+
+    ec->commit_tx(txid);
+      //--------------------------- transaction end
 
     return r;
 }
@@ -218,11 +228,12 @@ chfs_client::create(inum parent, const char *name, mode_t mode, inum &ino_out)
     //modify parent
     std::string tmp_buf;
     ec->get(parent,tmp_buf);
+    std::string origin_buf = tmp_buf;
     tmp_buf.append((std::string)name+":"+filename(ino_out)+"/");
     ec->put(parent,tmp_buf);
 
     //log 2
-    es->log_put(txid,parent,tmp_buf);
+    es->log_put(txid,parent,tmp_buf,origin_buf);
 
     ec->commit_tx(txid);
       //--------------------------- transaction end
@@ -260,10 +271,11 @@ chfs_client::mkdir(inum parent, const char *name, mode_t mode, inum &ino_out)
     //modify parent
     std::string tmp_buf;
     ec->get(parent,tmp_buf);
+    std::string origin_buf = tmp_buf;
     tmp_buf.append((std::string)name+":"+filename(ino_out)+"/");
 
     //log 2
-    es->log_put(txid,parent,tmp_buf);
+    es->log_put(txid,parent,tmp_buf,origin_buf);
 
     ec->put(parent,tmp_buf);
 
@@ -413,6 +425,7 @@ chfs_client::write(inum ino, size_t size, off_t off, const char *data,
         r = IOERR;
         return r;
     }
+    std::string origin_buf = buf;
 
     //--------------------------- transaction start
     unsigned long long txid = ec->begin_tx();
@@ -426,7 +439,7 @@ chfs_client::write(inum ino, size_t size, off_t off, const char *data,
 	bytes_written = size;
 
     //log-put
-    es->log_put(txid,ino,buf);
+    es->log_put(txid,ino,buf,origin_buf);
 
 	if(!ec->put(ino, buf)==extent_protocol::OK)
 		return IOERR;
@@ -466,6 +479,7 @@ int chfs_client::unlink(inum parent,const char *name)
     //modify parent
     std::string buf;
     ec->get(parent,buf);
+    std::string origin_buf = buf;
     
 	int erase_start = buf.find(name);
 	int erase_after = buf.find('/', erase_start);
@@ -474,7 +488,7 @@ int chfs_client::unlink(inum parent,const char *name)
        return IOERR;
 
     //log
-    es->log_remove(txid,tmp);   
+    es->log_remove(txid,tmp,origin_buf);   
 
     ec->commit_tx(txid);
     //--------------------------- transaction end
@@ -501,8 +515,11 @@ int chfs_client::symlink(inum parent, const char* name, const char* link, inum &
     if(ec->create(extent_protocol::T_SYMLINK, ino_out)!=extent_protocol::OK)
         return IOERR;
 
+    std::string origin_buf;
+    es->get(ino_out,origin_buf);
+
     //log-put1
-    es->log_put(txid,ino_out,(std::string)link);
+    es->log_put(txid,ino_out,(std::string)link,origin_buf);
     if(ec->put(ino_out,(std::string)link)!=extent_protocol::OK)
     {
         return IOERR;
@@ -512,9 +529,10 @@ int chfs_client::symlink(inum parent, const char* name, const char* link, inum &
     std::string tmp_buf;
     if(ec->get(parent,tmp_buf)!=extent_protocol::OK)
         return IOERR;
+    origin_buf = tmp_buf;
     tmp_buf.append((std::string)name+":"+filename(ino_out)+"/");
     //log-put2
-    es->log_put(txid,parent,tmp_buf);
+    es->log_put(txid,parent,tmp_buf,origin_buf);
     if(ec->put(parent,tmp_buf)!=extent_protocol::OK)
         return IOERR;
 

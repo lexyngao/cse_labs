@@ -25,7 +25,7 @@ class extent_client {
 
   unsigned long long begin_tx()
   {
-    es->log_begin();
+    es->log_begin(tx_counter);
     return tx_counter;
   }
 
@@ -34,7 +34,9 @@ class extent_client {
    
     //other things to do
     es->log_commit(txid);
-     tx_counter++;
+    tx_counter++;
+    //to check if checkpoint is needed
+    es->set_checkpoint();
   }
 
   extent_server* get_es()

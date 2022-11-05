@@ -17,8 +17,8 @@ extent_server::extent_server()
   _persister = new chfs_persister("log"); // DO NOT change the dir name here
 
   // Your code here for Lab2A: recover data on startup
-  // txid = 0;
-   restoredata();
+  restoredata();
+
 }
 
 /**
@@ -27,7 +27,30 @@ extent_server::extent_server()
 */
 void extent_server::restoredata(){
   printf("开始restore数据\n");
+  //检查之前有没有checkpoint过
+  if(!_persister->have_checkpoint())
+  {
+     printf("没有触发inode的保存呀\n");
+  }
+  else{
+      // 恢复inode数据 
+      // im->restore_blocks();
+      if(im->restore_inodes())
+      printf("嗯嗯inodes应该恢复成功了捏\n");
+      else
+      printf("inodes恢复碰到一点小问题\n");
+  }
+   
+  
+  
+  // 恢复log which contains 没有commit的执行的部分
   std::vector<chfs_command>logs = _persister->restore_logdata();
+  printf("log里还有数据%d条\n",logs.size());
+  // for(chfs_command log :logs)
+  // {
+  //   printf("没有清除的数据id:%d,type:%d\n",log.id,log.type);
+  // }
+
   std::vector<chfs_command>tx;
   tx.clear();
   bool flag = false;
@@ -81,14 +104,21 @@ void extent_server::restoredata(){
   }
 }
 
-// int extent_server::log_begin(unsigned long long txid)
-// {
-//   // printf("enter log_create \n");
-//   chfs_command::cmd_type cmd_type = chfs_command::CMD_BEGIN;
-//   chfs_command command(txid, cmd_type, "");
-//   _persister->append_log(command);
-//   return 1;
-// }
+int extent_server::log_begin(unsigned long long txid)
+{
+  // printf("enter log_create \n");
+  chfs_command::cmd_type cmd_type = chfs_command::CMD_BEGIN;
+  chfs_command command(txid, cmd_type, "");
+  _persister->append_log(command);
+  return 0;
+}
+
+void extent_server::log_commit(unsigned long long tid){
+    chfs_command::cmd_type cmd_type = chfs_command::CMD_COMMIT;
+    chfs_command command(tid, cmd_type, "", 0);
+    _persister->append_log(command);
+    
+    }
 
 int extent_server::create(uint32_t type, extent_protocol::extentid_t &id)
 {
@@ -120,11 +150,12 @@ int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)
 }
 
 
-int extent_server::log_put(unsigned long long txid, unsigned long long inum, std::string buf)
+int extent_server::log_put(unsigned long long txid, unsigned long long inum, 
+                          std::string buf,std::string origin_buf)
 {
   // printf("enter log_put \n");
   chfs_command::cmd_type cmd_type = chfs_command::CMD_PUT;
-  chfs_command command(txid, cmd_type, buf, inum);
+  chfs_command command(txid, cmd_type, buf, inum,origin_buf);
   _persister->append_log(command);
   return 1;
 }
@@ -175,11 +206,30 @@ int extent_server::remove(extent_protocol::extentid_t id, int &)
   return extent_protocol::OK;
 }
 
-int extent_server::log_remove(unsigned long long txid, unsigned long long inum){
+int extent_server::log_remove(unsigned long long txid, unsigned long long inum,std::string origin_buf){
   chfs_command::cmd_type cmd_type = chfs_command::CMD_REMOVE;
-  chfs_command command(txid, cmd_type, "", inum);
+  chfs_command command(txid, cmd_type, "", inum,origin_buf);
   _persister->append_log(command);
   return 1;
 }
 
+void extent_server::set_checkpoint()
+{
+  //检查log文件大小
+  if(!_persister->need_checkpoint())
+  return;
 
+  //TODO:这里是因为每次都在commit之后check有没有超过份额 所以没有考虑uncommit的事务
+
+  // 保存现在的快照->blocks有点太底层了 所以还是保存inodes
+  // char *blocks;
+  // im->snapshot_blocks(blocks);
+  // printf("保存好所有之前的status\n");
+  if(im->save_inodes())
+  printf("inodes应该已经保存好了\n");
+  
+
+  //清除log
+  _persister->clear_log();
+  //TODO:那些没有commit的命令
+}

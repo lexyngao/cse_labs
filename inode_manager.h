@@ -22,6 +22,9 @@ class disk {
   disk();
   void read_block(uint32_t id, char *buf);
   void write_block(uint32_t id, const char *buf);
+
+  void snapshot_blocks(char *buf);
+  bool restore_blocks();
 };
 
 // block layer -----------------------------------------
@@ -44,6 +47,9 @@ class block_manager {
   void free_block(uint32_t id);
   void read_block(uint32_t id, char *buf);
   void write_block(uint32_t id, const char *buf);
+
+  void snapshot_blocks(char *buf);
+  bool restore_blocks();
 };
 
 // inode layer -----------------------------------------
@@ -81,6 +87,19 @@ class inode_manager {
   block_manager *bm;
   struct inode* get_inode(uint32_t inum);
   void put_inode(uint32_t inum, struct inode *ino);
+  struct fixed_struct
+    {
+        long inode = 0;
+        short type;
+        unsigned long long buf_size = 0;
+        
+         void assign(long i,short t,unsigned long long b_s){
+            inode  = i;
+            type = t;
+            buf_size = b_s;
+        
+        }
+    };
 
  public:
   inode_manager();
@@ -94,6 +113,12 @@ class inode_manager {
   //my functions
   void alloc_nth_block(inode_t *ino,uint32_t n);
   blockid_t get_nth_blockid(inode_t *ino,uint32_t n);
+
+  void snapshot_blocks(char *buf);
+  bool restore_blocks();
+
+  bool save_inodes();
+  bool restore_inodes();
 };
 
 #endif

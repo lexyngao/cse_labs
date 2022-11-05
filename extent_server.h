@@ -33,23 +33,13 @@ class extent_server {
 
   // Your code here for lab2A: add logging APIs
   void restoredata();
+  void set_checkpoint();
 
-  int log_begin(){
-    chfs_command::cmd_type cmd_type = chfs_command::CMD_BEGIN;
-    chfs_command command(0, cmd_type, "", 0);
-    _persister->append_log(command);
-    return 0;
-    }
-
-  void log_commit(unsigned long long tid){
-    chfs_command::cmd_type cmd_type = chfs_command::CMD_COMMIT;
-    chfs_command command(tid, cmd_type, "", 0);
-    _persister->append_log(command);
-    }
-
+  int log_begin(unsigned long long);
+  void log_commit(unsigned long long tid);
   int log_create(unsigned long long txid, uint32_t type);
-  int log_put(unsigned long long txid, unsigned long long inum, std::string);
-  int log_remove(unsigned long long txid, unsigned long long inum);
+  int log_put(unsigned long long txid, unsigned long long inum, std::string,std::string);
+  int log_remove(unsigned long long txid, unsigned long long inum,std::string);
 
   // void restoredisk(std::string checkfile);
   
