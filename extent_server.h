@@ -32,6 +32,17 @@ class extent_server {
   int remove(extent_protocol::extentid_t id, int &);
 
   // Your code here for lab2A: add logging APIs
+  void restoredata();
+  void set_checkpoint();
+
+  int log_begin(unsigned long long);
+  void log_commit(unsigned long long tid);
+  int log_create(unsigned long long txid, uint32_t type);
+  int log_put(unsigned long long txid, unsigned long long inum, std::string,std::string);
+  int log_remove(unsigned long long txid, unsigned long long inum,std::string);
+
+  // void restoredisk(std::string checkfile);
+  
 };
 
 #endif 
