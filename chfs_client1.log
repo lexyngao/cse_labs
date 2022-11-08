@@ -1,8 +1,3 @@
-开始restore数据
-inode居然之前存在吗 不可思议
-我恢复完所有的之前写过的文件啦
-嗯嗯inodes应该恢复成功了捏
-log里还有数据37条
 FUSE library version: 2.9.9
 unique: 2, opcode: INIT (26), nodeid: 0, insize: 56, pid: 0
 INIT: 7.32
@@ -15,91 +10,6 @@ max_readahead=0x00020000
    max_background=0
    congestion_threshold=0
    unique: 2, success, outsize: 40
-unique: 4, opcode: LOOKUP (1), nodeid: 1, insize: 47, pid: 35342
-extent_server: getattr 1
-extent_server: get 1
-extent_server: getattr 2
-isfile: 2 is a file
-getattr 0000000000000002 1
-extent_server: getattr 2
-isfile: 2 is a file
-getfile 0000000000000002
-extent_server: getattr 2
-getfile 0000000000000002 -> sz 6000
-   getattr -> 6000
-   unique: 4, success, outsize: 144
-unique: 6, opcode: OPEN (14), nodeid: 2, insize: 48, pid: 35342
-   unique: 6, success, outsize: 32
-unique: 8, opcode: IOCTL (39), nodeid: 2, insize: 72, pid: 35342
-   unique: 8, error: -38 (Function not implemented), outsize: 16
-unique: 10, opcode: GETATTR (3), nodeid: 2, insize: 56, pid: 35342
-extent_server: getattr 2
-isfile: 2 is a file
-getattr 0000000000000002 1
-extent_server: getattr 2
-isfile: 2 is a file
-getfile 0000000000000002
-extent_server: getattr 2
-getfile 0000000000000002 -> sz 6000
-   getattr -> 6000
-   unique: 10, success, outsize: 120
-unique: 12, opcode: GETATTR (3), nodeid: 2, insize: 56, pid: 35342
-extent_server: getattr 2
-isfile: 2 is a file
-getattr 0000000000000002 1
-extent_server: getattr 2
-isfile: 2 is a file
-getfile 0000000000000002
-extent_server: getattr 2
-getfile 0000000000000002 -> sz 6000
-   getattr -> 6000
-   unique: 12, success, outsize: 120
-unique: 14, opcode: READ (15), nodeid: 2, insize: 80, pid: 35342
-extent_server: get 2
-   unique: 14, success, outsize: 6016
-unique: 16, opcode: GETATTR (3), nodeid: 2, insize: 56, pid: 35342
-extent_server: getattr 2
-isfile: 2 is a file
-getattr 0000000000000002 1
-extent_server: getattr 2
-isfile: 2 is a file
-getfile 0000000000000002
-extent_server: getattr 2
-getfile 0000000000000002 -> sz 6000
-   getattr -> 6000
-   unique: 16, success, outsize: 120
-unique: 18, opcode: FLUSH (25), nodeid: 2, insize: 64, pid: 35342
-   unique: 18, error: -38 (Function not implemented), outsize: 16
-unique: 20, opcode: RELEASE (18), nodeid: 2, insize: 64, pid: 0
-   unique: 20, success, outsize: 16
-unique: 22, opcode: LOOKUP (1), nodeid: 1, insize: 50, pid: 35342
-extent_server: getattr 1
-extent_server: get 1
-   unique: 22, error: -2 (No such file or directory), outsize: 16
-unique: 24, opcode: OPENDIR (27), nodeid: 1, insize: 48, pid: 35342
-   unique: 24, success, outsize: 32
-unique: 26, opcode: GETATTR (3), nodeid: 1, insize: 56, pid: 35342
-extent_server: getattr 1
-isfile: 1 is a dir
-getattr 0000000000000001 0
-extent_server: getattr 1
-isfile: 1 is a dir
-extent_server: getattr 1
-getdir 0000000000000001
-extent_server: getattr 1
-   getattr -> 1667613200 1667613200 1667613200
-   unique: 26, success, outsize: 120
-unique: 28, opcode: READDIR (28), nodeid: 1, insize: 80, pid: 35342
-fuseserver_readdir
-extent_server: getattr 1
-extent_server: getattr 1
-extent_server: get 1
-   unique: 28, success, outsize: 48
-unique: 30, opcode: READDIR (28), nodeid: 1, insize: 80, pid: 35342
-fuseserver_readdir
-extent_server: getattr 1
-extent_server: getattr 1
-extent_server: get 1
-   unique: 30, success, outsize: 16
-unique: 32, opcode: RELEASEDIR (29), nodeid: 1, insize: 64, pid: 0
-   unique: 32, success, outsize: 16
+unique: 4, opcode: LOOKUP (1), nodeid: 1, insize: 99, pid: 44092
+   unique: 4, error: -2 (No such file or directory), outsize: 16
+unique: 6, opcode: CREATE (35), nodeid: 1, insize: 115, pid: 44092

@@ -17,16 +17,17 @@
  * to achive all-or-nothing for these transactions.
  */
 
-chfs_client::chfs_client()
-{
-    ec = new extent_client();
-    es = ec->get_es();
+// chfs_client::chfs_client()
+// {
+//     ec = new extent_client();
+//     es = ec->get_es();
 
-}
+// }
 
 chfs_client::chfs_client(std::string extent_dst, std::string lock_dst)
 {
     ec = new extent_client(extent_dst);
+    es = ec->get_es();
     lc = new lock_client(lock_dst);
     if (ec->put(1, "") != extent_protocol::OK)
         printf("error init root dir\n"); // XYB: init root dir
@@ -210,6 +211,35 @@ chfs_client::create(inum parent, const char *name, mode_t mode, inum &ino_out)
      * after create file or dir, you must remember to modify the parent infomation.
      */
 
+//check if already existed
+    bool existed = false;
+    inum tmp;
+    lookup(parent,name,existed,tmp);
+    if(existed)
+        return EXIST;
+
+     //--------------------------- transaction start
+    //分配一个空inode
+    unsigned long long txid = ec->begin_tx();
+
+    //choose a inum
+    ec->create(extent_protocol::T_FILE, ino_out);
+
+    //log1
+    es->log_create(txid, extent_protocol::T_FILE);
+
+    //modify parent
+    std::string tmp_buf;
+    ec->get(parent,tmp_buf);
+    std::string origin_buf = tmp_buf;
+    tmp_buf.append((std::string)name+":"+filename(ino_out)+"/");
+    ec->put(parent,tmp_buf);
+
+    //log 2
+    es->log_put(txid,parent,tmp_buf,origin_buf);
+
+    ec->commit_tx(txid);
+      //--------------------------- transaction end
     return r;
 }
 

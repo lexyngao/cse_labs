@@ -10,6 +10,7 @@
 class extent_client {
  private:
   rpcc *cl;
+  extent_server *es;
   unsigned long long tx_counter = 1;
 
  public:
