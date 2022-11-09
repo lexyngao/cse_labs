@@ -123,7 +123,7 @@ void extent_server::log_commit(unsigned long long tid){
 int extent_server::create(uint32_t type, extent_protocol::extentid_t &id)
 {
   // alloc a new inode and return inum
-  // printf("extent_server: create inode\n");
+  printf("extent_server: create inode\n");
   id = im->alloc_inode(type);
 
   return extent_protocol::OK;

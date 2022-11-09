@@ -211,9 +211,10 @@ chfs_client::create(inum parent, const char *name, mode_t mode, inum &ino_out)
      * after create file or dir, you must remember to modify the parent infomation.
      */
 
-//check if already existed
+    //check if already existed
     bool existed = false;
     inum tmp;
+    printf("lookup之前\n");
     lookup(parent,name,existed,tmp);
     if(existed)
         return EXIST;
@@ -301,16 +302,18 @@ chfs_client::lookup(inum parent, const char *name, bool &found, inum &ino_out)
     std::list<dirent> list;
 
     readdir(parent,list);
-
+    printf("readdir parent 完成\n");
     if(list.empty())
     {
         found = 0;
+        printf("parent 空空\n");
         return r;
     }
 
 
     for (std::list<dirent>::iterator it = list.begin(); it != list.end(); it++) {
-		if (it->name.compare(name) == 0) { /* find */
+		printf(it->name.c_str());
+        if (it->name.compare(name) == 0) { /* find */
 			found = true;
 			ino_out = it->inum;
 			return r;

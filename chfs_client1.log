@@ -10,6 +10,11 @@ max_readahead=0x00020000
    max_background=0
    congestion_threshold=0
    unique: 2, success, outsize: 40
-unique: 4, opcode: LOOKUP (1), nodeid: 1, insize: 99, pid: 44092
+unique: 4, opcode: LOOKUP (1), nodeid: 1, insize: 99, pid: 63465
+readdir parent 完成
+parent 空空
    unique: 4, error: -2 (No such file or directory), outsize: 16
-unique: 6, opcode: CREATE (35), nodeid: 1, insize: 115, pid: 44092
+unique: 6, opcode: CREATE (35), nodeid: 1, insize: 115, pid: 63465
+lookup之前
+readdir parent 完成
+parent 空空
