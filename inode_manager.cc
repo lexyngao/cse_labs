@@ -1,26 +1,26 @@
 #include "inode_manager.h"
 
 // disk layer -----------------------------------------
+using namespace std;
 
 disk::disk()
 {
   bzero(blocks, sizeof(blocks));
-  // void bzero(void *s,int n) 作用:bzero函数的作用是将s指针指向的地址的前n个字节清零
+   // void bzero(void *s,int n) 作用:bzero函数的作用是将s指针指向的地址的前n个字节清零
 }
 
-void
-disk::read_block(blockid_t id, char *buf)
+void disk::read_block(blockid_t id, char *buf)
 {
+  // 从block读内容到缓存buf
   memcpy(buf, blocks[id], BLOCK_SIZE);
   // void *memcpy(void *destin, void *source, unsigned n)；函数的功能是从源内存地址的起始位置开始拷贝若干个字节到目标内存地址中，即从源source中拷贝n个字节到目标destin中
 }
 
-void
-disk::write_block(blockid_t id, const char *buf)
+void disk::write_block(blockid_t id, const char *buf)
 {
+  // 将buf内容写入block
   memcpy(blocks[id], buf, BLOCK_SIZE);
 }
-
 void
 disk::snapshot_blocks(char *buf)
 {
@@ -60,15 +60,9 @@ disk::restore_blocks()
 // block layer -----------------------------------------
 
 // Allocate a free disk block.
-
 blockid_t
 block_manager::alloc_block()
 {
-  /*
-   * your code goes here.
-   * note: you should mark the corresponding bit in block bitmap when alloc.
-   * you need to think about which block you can start to be allocated.
-   */
   for(int i = IBLOCK(INODE_NUM, sb.nblocks) + 1; i < BLOCK_NUM; i++)
     if(!using_blocks[i]){
       using_blocks[i] = true;
@@ -78,10 +72,9 @@ block_manager::alloc_block()
   return 0;
 }
 
-void
-block_manager::free_block(uint32_t id)
+void block_manager::free_block(uint32_t id)
 {
-  /* 
+  /*
    * your code goes here.
    * note: you should unmark the corresponding bit in the block bitmap when free.
    */
@@ -94,22 +87,17 @@ block_manager::free_block(uint32_t id)
 block_manager::block_manager()
 {
   d = new disk();
-  
-  // format the disk
   sb.size = BLOCK_SIZE * BLOCK_NUM;
   sb.nblocks = BLOCK_NUM;
   sb.ninodes = INODE_NUM;
-
 }
 
-void
-block_manager::read_block(uint32_t id, char *buf)
+void block_manager::read_block(uint32_t id, char *buf)
 {
   d->read_block(id, buf);
 }
 
-void
-block_manager::write_block(uint32_t id, const char *buf)
+void block_manager::write_block(uint32_t id, const char *buf)
 {
   d->write_block(id, buf);
 }
@@ -127,13 +115,15 @@ block_manager::restore_blocks()
   return d->restore_blocks();
 }
 
+
 // inode layer -----------------------------------------
 
 inode_manager::inode_manager()
 {
   bm = new block_manager();
   uint32_t root_dir = alloc_inode(extent_protocol::T_DIR);
-  if (root_dir != 1) {
+  if (root_dir != 1)
+  {
     printf("\tim: error! alloc first inode %d, should be 1\n", root_dir);
     exit(0);
   }
@@ -144,7 +134,7 @@ inode_manager::inode_manager()
 uint32_t
 inode_manager::alloc_inode(uint32_t type)
 {
-  /* 
+  /*
    * your code goes here.
    * note: the normal inode block should begin from the 2nd inode block.
    * the 1st is used for root_dir, see inode_manager::inode_manager().
@@ -172,14 +162,8 @@ inode_manager::alloc_inode(uint32_t type)
   return inum;
 }
 
-void
-inode_manager::free_inode(uint32_t inum)
+void inode_manager::free_inode(uint32_t inum)
 {
-  /* 
-   * your code goes here.
-   * note: you need to check if the inode is already a freed one;
-   * if not, clear it, and remember to write back to disk.
-   */
   inode_t *ino = get_inode(inum);
   if (!ino || !(ino->type))
   {
@@ -194,13 +178,11 @@ inode_manager::free_inode(uint32_t inum)
     put_inode(inum,ino);
     free(ino);
   }
-  // ino == null 表明为freed
 }
-
 
 /* Return an inode structure by inum, NULL otherwise.
  * Caller should release the memory. */
-struct inode* 
+struct inode *
 inode_manager::get_inode(uint32_t inum)
 {
   struct inode *ino;
@@ -232,65 +214,20 @@ inode_manager::get_inode(uint32_t inum)
   return ino;
 }
 
-void
-inode_manager::put_inode(uint32_t inum, struct inode *ino)
+void inode_manager::put_inode(uint32_t inum, struct inode *ino)
 {
   char buf[BLOCK_SIZE];
   struct inode *ino_disk;
-
   if (ino == NULL)
     return;
-
   bm->read_block(IBLOCK(inum, bm->sb.nblocks), buf);
-  ino_disk = (struct inode*)buf + inum%IPB;//这个取模应该是为一个block多个inode准备的
+  ino_disk = (struct inode *)buf + inum % IPB;//这个取模应该是为一个block多个inode准备的
   *ino_disk = *ino;
   bm->write_block(IBLOCK(inum, bm->sb.nblocks), buf);
 }
 
-#define MIN(a,b) ((a)<(b) ? (a) : (b))
-
-/* Get all the data of a file by inum. 
- * Return alloced data, should be freed by caller. */
-void
-inode_manager::read_file(uint32_t inum, char **buf_out, int *size)
-{
-  /*
-   * your code goes here.
-   * note: read blocks related to inode number inum,
-   * and copy them to buf_Out
-   */
-  inode_t *ino = get_inode(inum);
-
-  if (!ino) 
-    return;
-
-  *size = ino->size;
-  if(ino->size > MAXFILE * BLOCK_SIZE)
-    exit(0);
-  if(ino->size == 0)
-    return;
-  
-  uint32_t block_num = *size / BLOCK_SIZE;
-  uint32_t remain_size = *size % BLOCK_SIZE;
-
-  char  buf_tmp[BLOCK_SIZE];//why not char*
-  *buf_out = (char *)malloc(*size);
-
-  int i = 0;
-    for(; i < block_num; i++){
-      bm->read_block(get_nth_blockid(ino, i), buf_tmp);//use a new function to unify direct & indirect
-      memcpy(*buf_out + i*BLOCK_SIZE, buf_tmp, BLOCK_SIZE);
-    }
-    if(remain_size){
-      bm->read_block(get_nth_blockid(ino, i), buf_tmp);
-      memcpy(*buf_out + i*BLOCK_SIZE, buf_tmp, remain_size);
-      
-    }
-    free(ino);
-  
-  
-  return;
-}
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 //my functions
 blockid_t
@@ -349,9 +286,49 @@ inode_manager::alloc_nth_block(inode_t *ino, uint32_t n)
   }
 }
 
+
+/* Get all the data of a file by inum.
+ * Return alloced data, should be freed by caller. */
+void inode_manager::read_file(uint32_t inum, char **buf_out, int *size)
+{
+  /*
+   * your code goes here.
+   * note: read blocks related to inode number inum,
+   * and copy them to buf_Out
+   */
+  int block_num = 0;
+  int remain_size = 0;
+  char buf[BLOCK_SIZE];
+  int i = 0;
+
+  printf("\tim: read_file %d\n", inum);
+  inode_t *ino = get_inode(inum);
+  if(ino){
+    *size = ino->size;
+    assert((unsigned int)*size <= MAXFILE * BLOCK_SIZE);
+    *buf_out = (char *)malloc(*size);
+
+    block_num = *size / BLOCK_SIZE;
+    remain_size = *size % BLOCK_SIZE;
+
+    for(; i < block_num; i++){
+      bm->read_block(get_nth_blockid(ino, i), buf);
+      memcpy(*buf_out + i*BLOCK_SIZE, buf, BLOCK_SIZE);
+    }
+    if(remain_size){
+      bm->read_block(get_nth_blockid(ino, i), buf);
+      memcpy(*buf_out + i*BLOCK_SIZE, buf, remain_size);
+      // printf("\tim: read_file %s %d\n", *buf_out, *size);
+    }
+    free(ino);
+  }
+  return;
+}
+
+
+
 /* alloc/free blocks if needed */
-void
-inode_manager::write_file(uint32_t inum, const char *buf, int size)
+void inode_manager::write_file(uint32_t inum, const char *buf, int size)
 {
   /*
    * your code goes here.
@@ -366,7 +343,7 @@ inode_manager::write_file(uint32_t inum, const char *buf, int size)
   int i = 0;
 
   assert(size >= 0 && (uint32_t)size <= MAXFILE * BLOCK_SIZE);
-  
+  printf("\tim: write_file %d of size %d\n", inum, size);
   inode_t *ino = get_inode(inum);
   if(ino){
     assert((unsigned int)size <= MAXFILE * BLOCK_SIZE);
@@ -392,69 +369,49 @@ inode_manager::write_file(uint32_t inum, const char *buf, int size)
     }
 
     ino->size = size;
-    ino->atime = (unsigned int)time(NULL);
-    ino->mtime = (unsigned int)time(NULL);
-    ino->ctime = (unsigned int)time(NULL);
+    ino->atime = time(NULL);
+    ino->mtime = time(NULL);
+    ino->ctime = time(NULL);
     put_inode(inum, ino);
     free(ino);
   }
-  return;
 }
 
-void
-inode_manager::get_attr(uint32_t inum, extent_protocol::attr &a)
+
+void inode_manager::get_attr(uint32_t inum, extent_protocol::attr &a)
 {
-  /*
-   * your code goes here.
-   * note: get the attributes of inode inum.
-   * you can refer to "struct attr" in extent_protocol.h
-   */
-  
-  inode_t *ino = get_inode(inum);
-  if(!ino)
+  inode_t *inode = get_inode(inum);
+  if (!inode)
     return;
-  a.type = ino->type;
-  a.atime = ino->atime;
-  a.mtime = ino->mtime;
-  a.ctime = ino->ctime;
-  a.size = ino->size;
-  free(ino);
+  a.type = inode->type;
+  a.atime = inode->atime;
+  a.mtime = inode->mtime;
+  a.ctime = inode->ctime;
+  a.size = inode->size;
+  free(inode);
   return;
 }
 
-void
-inode_manager::remove_file(uint32_t inum)
+void inode_manager::remove_file(uint32_t inum)
 {
   /*
    * your code goes here
    * note: you need to consider about both the data block and inode of the file
    */
+  // printf("\tim: remove_file %d\n", inum);
   inode_t *ino = get_inode(inum);
   assert(ino);
 
-  int size = ino->size;
-  int block_num = size == 0 ? 0 : (size -1)/BLOCK_SIZE + 1;
-  for (int i = 0; i < block_num; i++)
-  {
-    bm->free_block(get_nth_blockid(ino,i));
-  }
+  int block_num = ino->size == 0? 0 : (ino->size - 1)/BLOCK_SIZE + 1;
+  for(int i = 0; i < block_num; i++)
+    bm->free_block(get_nth_blockid(ino, i));
   if(block_num > NDIRECT)
-  {
-    char indirect[BLOCK_SIZE];
-    bm->read_block(ino->blocks[NDIRECT],indirect);
-
-    // free indirect blocks
-      for (int i = 0; i < (size - NDIRECT * BLOCK_SIZE - 1)/BLOCK_SIZE + 1; i++) 
-      {
-        bm->free_block(*((uint32_t *)indirect + i));
-      }
     bm->free_block(ino->blocks[NDIRECT]);
-  }
   bzero(ino, sizeof(inode_t));
 
   free_inode(inum);
   free(ino);
-  
+  return;
 }
 
 void

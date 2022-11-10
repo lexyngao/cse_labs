@@ -11,7 +11,6 @@ class extent_client {
  private:
   rpcc *cl;
   extent_server *es;
-  unsigned long long tx_counter = 1;
 
  public:
   extent_client(std::string dst);
@@ -24,26 +23,16 @@ class extent_client {
   extent_protocol::status put(extent_protocol::extentid_t eid, std::string buf);
   extent_protocol::status remove(extent_protocol::extentid_t eid);
 
-  unsigned long long begin_tx()
-  {
-    es->log_begin(tx_counter);
-    return tx_counter;
-  }
+  // int begin_cmd(){return es->log_begin();}
+  // void commit_cmd(unsigned long long txid){ es->log_commit(txid);}
+  // void create_cmd(unsigned long long txid, uint32_t type){es->log_create(txid, type);}
+  // void put_cmd(unsigned long long txid, unsigned long long inum, std::string str){
+  //   es->log_put(txid, inum, str);
+  // }
+  // void remove_cmd(unsigned long long txid, unsigned long long inum){
+  //   es->log_remove(txid, inum);
+  // }
 
-  void commit_tx(unsigned long long txid)
-  {
-   
-    //other things to do
-    es->log_commit(txid);
-    tx_counter++;
-    //to check if checkpoint is needed
-    es->set_checkpoint();
-  }
-
-  extent_server* get_es()
-  {
-    return es;
-  }
 };
 
 #endif 

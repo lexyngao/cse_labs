@@ -10,7 +10,6 @@
 
 class chfs_client {
   extent_client *ec;
-  extent_server *es;
   lock_client *lc;
  public:
 
@@ -43,7 +42,6 @@ class chfs_client {
 
   bool isfile(inum);
   bool isdir(inum);
-  // bool issymlink(inum inum);
 
   int getfile(inum, fileinfo &);
   int getdir(inum, dirinfo &);
@@ -60,7 +58,6 @@ class chfs_client {
   /** you may need to add symbolic link related methods here.*/
   int symlink(inum parent, const char* name, const char* link, inum &ino_out);
   int readlink(inum ino, std::string &data);
-  
 };
 
 #endif 

@@ -17,7 +17,7 @@ extent_server::extent_server()
   _persister = new chfs_persister("log"); // DO NOT change the dir name here
 
   // Your code here for Lab2A: recover data on startup
-  restoredata();
+  // restoredata();
 
 }
 
@@ -28,18 +28,18 @@ extent_server::extent_server()
 void extent_server::restoredata(){
   printf("开始restore数据\n");
   //检查之前有没有checkpoint过
-  if(!_persister->have_checkpoint())
-  {
-     printf("没有触发inode的保存呀\n");
-  }
-  else{
-      // 恢复inode数据 
-      // im->restore_blocks();
-      if(im->restore_inodes())
-      printf("嗯嗯inodes应该恢复成功了捏\n");
-      else
-      printf("inodes恢复碰到一点小问题\n");
-  }
+  // if(!_persister->have_checkpoint())
+  // {
+  //    printf("没有触发inode的保存呀\n");
+  // }
+  // else{
+  //     // 恢复inode数据 
+  //     // im->restore_blocks();
+  //     if(im->restore_inodes())
+  //     printf("嗯嗯inodes应该恢复成功了捏\n");
+  //     else
+  //     printf("inodes恢复碰到一点小问题\n");
+  // }
    
   
   
@@ -123,7 +123,7 @@ void extent_server::log_commit(unsigned long long tid){
 int extent_server::create(uint32_t type, extent_protocol::extentid_t &id)
 {
   // alloc a new inode and return inum
-  printf("extent_server: create inode\n");
+  // printf("extent_server: create inode\n");
   id = im->alloc_inode(type);
 
   return extent_protocol::OK;

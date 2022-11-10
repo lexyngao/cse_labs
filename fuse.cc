@@ -46,6 +46,7 @@ getattr(chfs_client::inum inum, struct stat &st)
 
     st.st_ino = inum;
     printf("getattr %016llx %d\n", inum, chfs->isfile(inum));
+    // file
     if(chfs->isfile(inum)){
         chfs_client::fileinfo info;
         ret = chfs->getfile(inum, info);
@@ -58,7 +59,10 @@ getattr(chfs_client::inum inum, struct stat &st)
         st.st_ctime = info.ctime;
         st.st_size = info.size;
         printf("   getattr -> %llu\n", info.size);
-    } else if(chfs->isdir(inum)){
+        return chfs_client::OK;
+    } 
+    // dir
+    if(chfs->isdir(inum)){
         chfs_client::dirinfo info;
         ret = chfs->getdir(inum, info);
         if(ret != chfs_client::OK)
@@ -69,21 +73,21 @@ getattr(chfs_client::inum inum, struct stat &st)
         st.st_mtime = info.mtime;
         st.st_ctime = info.ctime;
         printf("   getattr -> %lu %lu %lu\n", info.atime, info.mtime, info.ctime);
+        return chfs_client::OK;
     }
-    else{//symlink
-        //TODO:是否需要判断是否为symlink 即issymlink（复活cc）
-        chfs_client::fileinfo info;
-        ret = chfs->getfile(inum, info);
-        if(ret != chfs_client::OK)
-            return ret;
-        st.st_mode = S_IFLNK | 0777;
-        st.st_nlink = 1;
-        st.st_atime = info.atime;
-        st.st_mtime = info.mtime;
-        st.st_ctime = info.ctime;
-        st.st_size = info.size;
-        printf("   getattr -> link %llu\n", info.size);
-    }
+    // symlink
+    chfs_client::fileinfo info;
+    ret = chfs->getfile(inum, info);
+    if(ret != chfs_client::OK)
+        return ret;
+    st.st_mode = S_IFLNK | 0777;
+    st.st_nlink = 1;
+    st.st_atime = info.atime;
+    st.st_mtime = info.mtime;
+    st.st_ctime = info.ctime;
+    st.st_size = info.size;
+    printf("   getattr -> link %llu\n", info.size);
+    
     return chfs_client::OK;
 }
 
@@ -240,7 +244,6 @@ fuseserver_createhelper(fuse_ino_t parent, const char *name,
         mode_t mode, struct fuse_entry_param *e, int type)
 {
     int ret;
-    // In chfs, timeouts are always set to 0.0, and generations are always set to 0
     e->attr_timeout = 0.0;
     e->entry_timeout = 0.0;
     e->generation = 0;

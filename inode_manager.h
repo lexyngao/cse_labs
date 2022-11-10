@@ -23,6 +23,22 @@ class disk {
   void read_block(uint32_t id, char *buf);
   void write_block(uint32_t id, const char *buf);
 
+  // unsigned char** getDisk(){return (unsigned char **)blocks;}
+  // void restoredisk(std::string checkfile){
+  //   printf("进入disk的restoredisk \n");
+  //   FILE* logf = fopen(checkfile.c_str(), "rb");
+  //   if(logf != NULL){
+  //     fread(blocks, sizeof(blocks), 1, logf);
+  //     fclose(logf);
+  //   }
+  // }
+
+  // void savedisk(std::string checkfile){
+  //   printf("进入disk的savedisk \n");
+  //   FILE* logf = fopen(checkfile.c_str(), "w+b");
+  //   fwrite(blocks, sizeof(blocks), 1, logf);
+  //   fclose(logf);
+  // }
   void snapshot_blocks(char *buf);
   bool restore_blocks();
 };
@@ -47,9 +63,10 @@ class block_manager {
   void free_block(uint32_t id);
   void read_block(uint32_t id, char *buf);
   void write_block(uint32_t id, const char *buf);
-
   void snapshot_blocks(char *buf);
   bool restore_blocks();
+  // void restoredisk(std::string checkfile){d->restoredisk(checkfile);}
+  // void savedisk(std::string checkfile){d->savedisk(checkfile);}
 };
 
 // inode layer -----------------------------------------
@@ -114,6 +131,9 @@ class inode_manager {
   void alloc_nth_block(inode_t *ino,uint32_t n);
   blockid_t get_nth_blockid(inode_t *ino,uint32_t n);
 
+  
+  // void restoredisk(std::string checkfile){bm->restoredisk(checkfile);}
+  // void savedisk(std::string checkfile){bm->savedisk(checkfile);}
   void snapshot_blocks(char *buf);
   bool restore_blocks();
 
