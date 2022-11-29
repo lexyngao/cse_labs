@@ -196,6 +196,9 @@ raft<state_machine, command>::raft(rpcs *server, std::vector<rpcc *> clients, in
     election_timer = get_current_time();
 
     // TODO:restore
+    /* restore metadata and logdata */
+    storage->restore_metadata(current_term, votedFor);
+    storage->restore_logdata(log);
     
      
 }
@@ -264,7 +267,7 @@ bool raft<state_machine, command>::new_command(command cmd, int &term, int &inde
     {
         log_entry<command> current_log = log_entry<command>(cmd,current_term,(int)log.size());
         /* persist log state */
-        // storage->persist_logdata(current_log);
+        storage->persist_logdata(current_log);
 
         log.push_back(current_log);
 
@@ -315,7 +318,7 @@ int raft<state_machine, command>::request_vote(request_vote_args args, request_v
             votedFor = args.candidateId;
 
             // /* persist metadata */
-            // storage->persist_metadata(current_term, votedFor);
+            storage->persist_metadata(current_term, votedFor);
         }
     
     else {
@@ -344,7 +347,7 @@ void raft<state_machine, command>::handle_request_vote_reply(int target, const r
         votedFor = -1;
 
         /* persist metadata state: term changes */
-        // storage->persist_metadata(current_term, votedFor);
+        storage->persist_metadata(current_term, votedFor);
     }
 
     else {
@@ -378,7 +381,7 @@ int raft<state_machine, command>::append_entries(append_entries_args<command> ar
             reply.success = true;
 
             /* persist metadata state: term changes */
-            // storage->persist_metadata(current_term, votedFor);
+            storage->persist_metadata(current_term, votedFor);
         } else {
             reply.term = current_term;
             reply.success = false;
@@ -410,7 +413,7 @@ int raft<state_machine, command>::append_entries(append_entries_args<command> ar
         /* Append any new entries not already in the log */
         while (i < (int) arg.entries.size()) {
             /* persist log data */
-            // storage->persist_logdata(arg.entries[i]);
+            storage->persist_logdata(arg.entries[i]);
 
             log.push_back(arg.entries[i]);
             i++;
@@ -446,7 +449,7 @@ void raft<state_machine, command>::handle_append_entries_reply(int node, const a
         votedFor = -1;
 
         /* persist metadata state: term changes */
-        // storage->persist_metadata(current_term, votedFor);
+        storage->persist_metadata(current_term, votedFor);
     } else if (arg.heartbeat) {}
     else if (reply.success) {
         matchIndex[node] = std::max(matchIndex[node], (int) arg.entries.size() - 1);
@@ -547,7 +550,7 @@ void raft<state_machine, command>::run_background_election() {
                 votedFor = my_id;
 
                 /* persist metadata */
-                // storage->persist_metadata(current_term, votedFor);
+                storage->persist_metadata(current_term, votedFor);
 
                 calculateVote.assign(rpc_clients.size(), false);
                 calculateVote[my_id] = true;
@@ -584,7 +587,7 @@ void raft<state_machine, command>::run_background_election() {
                 current_term--;
 
                 /* persist metadata */
-                // storage->persist_metadata(current_term, votedFor);
+                storage->persist_metadata(current_term, votedFor);
             }
 
             break;

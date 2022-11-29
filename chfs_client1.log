@@ -10,14 +10,14 @@ max_readahead=0x00020000
    max_background=0
    congestion_threshold=0
    unique: 2, success, outsize: 40
-unique: 4, opcode: LOOKUP (1), nodeid: 1, insize: 99, pid: 17994
+unique: 4, opcode: LOOKUP (1), nodeid: 1, insize: 99, pid: 98941
    unique: 4, error: -2 (No such file or directory), outsize: 16
-unique: 6, opcode: CREATE (35), nodeid: 1, insize: 115, pid: 17994
-isfile: 139799172221792 is a dir
-getattr 00007f2588000b60 0
-isfile: 139799172221792 is a dir
-getfile 00007f2588000b60
-getfile 00007f2588000b60 -> sz 2281704288
-   getattr -> link 2281704288
+unique: 6, opcode: CREATE (35), nodeid: 1, insize: 115, pid: 98941
+isfile: 140714939781696 is a dir
+getattr 00007ffac0001240 0
+isfile: 140714939781696 is a dir
+getfile 00007ffac0001240
+getfile 00007ffac0001240 -> sz 3221230144
+   getattr -> link 3221230144
    unique: 6, success, outsize: 160
 OK: create returns.

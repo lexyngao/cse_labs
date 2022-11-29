@@ -31,10 +31,14 @@ public:
     extent_protocol::extentid_t id;
     std::string buf;
     std::shared_ptr<result> res;
+    std::string value;
 
     chfs_command_raft();
 
     chfs_command_raft(const chfs_command_raft &cmd);
+
+    //add another way to implement it
+    // chfs_command_raft();
 
     virtual ~chfs_command_raft();
 
