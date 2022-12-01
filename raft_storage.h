@@ -62,7 +62,7 @@ void raft_storage<command>::persist_logdata(const log_entry<command> log) {
         (log.cmd).serialize(buf, size);
         logdata.write(buf, size);
         
-        fprintf(stderr, "persist_logdata: log.term: %d, log.index: %d, log.cmd: %d\n", log.term, log.index, log.cmd.value);
+        fprintf(stderr, "persist_logdata: log.term: %d, log.index: %d\n", log.term, log.index);
 
         delete [] buf;
 
@@ -94,7 +94,7 @@ void raft_storage<command>::restore_logdata(std::vector< log_entry<command> >& l
             while (index >= log.size()) log.push_back(log_entry<command>());
             log[index] = log_entry<command>(cmd, term, index);
 
-            fprintf(stderr, "restore_logdata: log.term: %d, log.index: %d, log.cmd: %d\n", term, index, cmd.value);
+            fprintf(stderr, "restore_logdata: log.term: %d, log.index: %d\n", term, index);
         }
 
         logdata.close();

@@ -93,11 +93,13 @@ private:
     std::thread *background_apply;
 
     // Your code here:
-    //今年lab没有给
+    
     /* some static value */
     const int timeout_heartbeat = 120;
+    //election的随机时间
     const int timeout_follower_election_lower = 300;
     const int timeout_follower_election_upper = 500;
+
     const int timeout_candidate_election_timeout = 1000;
     const int timeout_commit = 150;
 
@@ -179,7 +181,7 @@ raft<state_machine, command>::raft(rpcs *server, std::vector<rpcc *> clients, in
     rpc_server->reg(raft_rpc_opcodes::op_install_snapshot, this, &raft::install_snapshot);
 
     // Your code here:
-    // Do the initialization
+    // initialization
     votedFor = -1;
 
     log = std::vector<log_entry<command>>();
@@ -353,7 +355,7 @@ void raft<state_machine, command>::handle_request_vote_reply(int target, const r
     else {
         assert(target < (int) calculateVote.size());
 
-        calculateVote[target] = reply.voteGranted;
+            calculateVote[target] = reply.voteGranted;
     }
 
     mtx.unlock();
@@ -532,78 +534,78 @@ void raft<state_machine, command>::run_background_election() {
             return;}
         // Lab3: Your code here
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
-    long long current_time = get_current_time();
-    // Work for followers and candidates.
+        long long current_time = get_current_time();
+        // Work for followers and candidates.
 
-    switch (role)
-        {
-        case follower:
-        {
-            long long timeout_follower_election = get_random(timeout_follower_election_lower, timeout_follower_election_upper);
-            if (current_time - election_timer > timeout_follower_election) {
-                role = candidate;
+        switch (role)
+            {
+            case follower:
+            {
+                long long timeout_follower_election = get_random(timeout_follower_election_lower, timeout_follower_election_upper);
+                if (current_time - election_timer > timeout_follower_election) {
+                    role = candidate;
 
-                current_term++;
+                    current_term++;
 
-                votedFor = my_id;
+                    votedFor = my_id;
 
-                /* persist metadata */
-                storage->persist_metadata(current_term, votedFor);
+                    /* persist metadata */
+                    storage->persist_metadata(current_term, votedFor);
 
-                calculateVote.assign(rpc_clients.size(), false);
-                calculateVote[my_id] = true;
+                    calculateVote.assign(rpc_clients.size(), false);
+                    calculateVote[my_id] = true;
 
-                request_vote_args args(current_term, my_id, log.back().term, log.size() - 1);
-                
-                /* update timestamp first */
-                election_timer = get_current_time();
-                for (int i = 0; i < (int) rpc_clients.size(); i++)
-                    if (i != my_id)
-                        thread_pool->addObjJob(this, &raft::send_request_vote, i, args);
-                
-            };
-            break;
-        }
-
-        case candidate:
-        {
-
-            if (std::accumulate(calculateVote.begin(), calculateVote.end(), 0) > (int) rpc_clients.size() / 2) {
-                /* the leader initializes all nextIndex values to the index just after the last one in its log */
-                nextIndex.assign(rpc_clients.size(), log.size());
-                matchIndex.assign(rpc_clients.size(), 0);
-
-                role = leader;
-            }
-            else if (current_time - election_timer > timeout_candidate_election_timeout) {
-                role = follower;
-
-                /* update timestamp first */
-                election_timer = get_current_time();
-
-                votedFor = -1;
-                current_term--;
-
-                /* persist metadata */
-                storage->persist_metadata(current_term, votedFor);
+                    request_vote_args args(current_term, my_id, log.back().term, log.size() - 1);
+                    
+                    /* update timestamp first */
+                    election_timer = get_current_time();
+                    for (int i = 0; i < (int) rpc_clients.size(); i++)
+                        if (i != my_id)
+                            thread_pool->addObjJob(this, &raft::send_request_vote, i, args);
+                    
+                };
+                break;
             }
 
-            break;
-        }
+            case candidate:
+            {
 
-        case leader:
-        {            
-            break;
+                if (std::accumulate(calculateVote.begin(), calculateVote.end(), 0) > (int) rpc_clients.size() / 2) {
+                    /* the leader initializes all nextIndex values to the index just after the last one in its log */
+                    nextIndex.assign(rpc_clients.size(), log.size());
+                    matchIndex.assign(rpc_clients.size(), 0);
+
+                    role = leader;
+                }
+                else if (current_time - election_timer > timeout_candidate_election_timeout) {
+                    role = follower;
+
+                    /* update timestamp first */
+                    election_timer = get_current_time();
+
+                    votedFor = -1;
+                    current_term--;
+
+                    /* persist metadata */
+                    storage->persist_metadata(current_term, votedFor);
+                }
+
+                break;
+            }
+
+            case leader:
+            {            
+                break;
+            }
+            
+            default:
+                break;
+            }
         }
         
-        default:
-            break;
-        }
-    }
-    
-    return;
+        return;
 }
 
 template <typename state_machine, typename command>

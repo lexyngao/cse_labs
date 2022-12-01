@@ -31,7 +31,7 @@ int extent_server_dist::getattr(extent_protocol::extentid_t id, extent_protocol:
 }
 
 int extent_server_dist::remove(extent_protocol::extentid_t id, int &) {
-    // Lab3: your code here
+    // Lab3: your code here 
     return extent_protocol::OK;
 }
 

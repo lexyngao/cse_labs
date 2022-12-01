@@ -7,6 +7,9 @@ chfs_command_raft::chfs_command_raft() {
 chfs_command_raft::chfs_command_raft(const chfs_command_raft &cmd) :
     cmd_tp(cmd.cmd_tp), type(cmd.type),  id(cmd.id), buf(cmd.buf), res(cmd.res) {
     // Lab3: Your code here
+    res->start = std::chrono::system_clock::now();
+    res->buf = buf;
+    res->id = id;
 }
 chfs_command_raft::~chfs_command_raft() {
     // Lab3: Your code here
